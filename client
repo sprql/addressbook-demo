@@ -1,0 +1,115 @@
+#!/usr/bin/env ruby
+require 'bundler/inline'
+
+gemfile do
+  source 'https://rubygems.org'
+
+  gem 'addressbook_client', path: './addressbook_client'
+  gem 'thor'
+  gem 'hirb-unicode'
+end
+
+class CLI < Thor
+  URL = ENV['URL'] || 'http://localhost:9292/'
+  BASIC_AUTH_NANE = ENV['BASIC_AUTH_NANE'] || 'development'
+  BASIC_AUTH_PASSWORD = ENV['BASIC_AUTH_PASSWORD'] || 'development'
+
+  desc 'get [ID] [QUERY]', 'Get contacts by ID/QUERY, if ID/QUERY empty returns all contacts'
+  def get(query = nil)
+    result = query ? contacts.search(query) : contacts.get(nil)
+    return not_found(id) if result.status == 404
+    print_data(result.data)
+  end
+
+  desc 'post_file FILE', 'Post JSON data from a file'
+  def post_file(file)
+    json = File.read(file)
+    data = JSON.parse(json)
+    result = contacts.post(data)
+    return print_errors(result.errors) if result.errors
+    puts "Created:\n\n"
+    print_data(result.data)
+  rescue Errno::ENOENT => e
+    puts "File `#{file}` not found"
+  rescue JSON::ParserError => e
+    puts "Wrong JSON `#{file}`: #{e.message}"
+  end
+
+  desc 'create [FIRST_NAME] [LAST_NAME] [PHONE] [ADDRESS]', 'Create a contact'
+  def create(first_name, last_name, phone, address)
+    result = contacts.create(first_name: first_name, last_name: last_name, phone: phone, address: address)
+    return print_errors(result.errors) if result.errors
+    puts "Created:\n\n"
+    print_data(result.data)
+  end
+
+  desc 'update ID FIELD [VALUE]', 'Update a contact'
+  def update(id, field, value = nil)
+    id = normalize_id(id)
+    result = contacts.update_field(id, field, value)
+    return print_errors(result.errors) if result.errors
+    puts "Update: Ok\n\n"
+    print_data(contacts.get(id).data)
+  end
+
+  desc 'upload ID FILE', 'Add image to a contact'
+  def upload(id, path)
+    id = normalize_id(id)
+    result = contacts.upload(id, path)
+    return print_errors(result.errors) if result.errors
+    puts "Update: Ok\n\n"
+    print_data(contacts.get(id).data)
+  end
+
+  desc 'delete ID', 'Delete a contact by ID'
+  def delete(id)
+    id = normalize_id(id)
+    result = contacts.delete(id)
+    return print_errors(result.errors) if result.errors
+    puts "Contact with id=#{id} was deleted"
+  end
+
+  private
+
+  def normalize_id(id)
+    if id.size < 36
+      results = contacts.search(id).data
+      return not_found(id) if results.empty?
+      return puts('ID collision: please specify full ID') if results.size > 1
+      results.first.id
+    else
+      id
+    end
+  end
+
+  def not_found(id)
+    puts "Contact with id=#{id} is not found"
+  end
+
+  def print_data(data)
+    data = data.is_a?(Array) ? data : [data]
+    options = {
+      headers: { short_id: 'id' },
+      fields: [:short_id, :first_name, :last_name, :phone, :address],
+      unicode: true
+    }
+    if data.size < 2
+      options[:fields] = [:id, :first_name, :last_name, :phone, :address]
+      options[:vertical] = true
+    end
+    puts Hirb::Helpers::AutoTable.render(data, options)
+  end
+
+  def print_errors(errors)
+    puts "Errors:"
+    puts Hirb::Helpers::AutoTable.render(errors, fields: [:status, :source, :detail], unicode: true)
+  end
+
+  def contacts
+    @contacts ||= AddressbookClient.authorize!(api_url: URL,
+                                               username: BASIC_AUTH_NANE,
+                                               password: BASIC_AUTH_PASSWORD).contacts
+  end
+end
+
+CLI.start(ARGV)

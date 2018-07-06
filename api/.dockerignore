@@ -1,0 +1,7 @@
+.git
+.dockerignore
+.gitignore
+**/spec/*
+**/log/*.log
+**/tmp/*
+**/.DS_Store

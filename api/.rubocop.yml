@@ -1,0 +1,26 @@
+AllCops:
+  TargetRubyVersion: 2.5
+  Exclude:
+    - '**/bin/*'
+    - 'db/schema.rb'
+
+Metrics/LineLength:
+  Max: 120
+
+Style/Documentation:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
+
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/AbcSize:
+  Severity: refactor

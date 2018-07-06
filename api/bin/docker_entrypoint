@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+return puts("Please set the DATABASE_URL environment variable") unless ENV['DATABASE_URL']
+
+puts("Please set the BASIC_AUTHENTICATION_NAME environment variable") unless ENV['BASIC_AUTHENTICATION_NAME']
+puts("Please set the BASIC_AUTHENTICATION_PASSWORD environment variable") unless ENV['BASIC_AUTHENTICATION_PASSWORD']
+
+require_relative '../config/boot'
+require 'rake'
+
+ENV['RAILS_LOG_TO_STDOUT'] = '1'
+
+Rake.application.init
+Rake.application.load_rakefile
+
+Rake::Task['db:create'].invoke
+Rake::Task['db:migrate'].invoke
+
+http_port = ENV['PORT'] || '9292'
+backlog = ENV['PUMA_BACKLOG'] || '1024'
+threads = ENV['PUMA_THREADS'] || '4:4'
+workers = ENV['PUMA_WORKERS'] || '2'
+
+bind_address = "-b tcp://0.0.0.0:#{http_port}?backlog=#{backlog}"
+server_options = "#{bind_address}#{workers} -t #{threads} -w #{workers} config.ru".split(' ')
+
+puts "Starting Addressbook API with options #{server_options}"
+
+require 'puma/cli'
+cli = Puma::CLI.new(server_options)
+cli.run
