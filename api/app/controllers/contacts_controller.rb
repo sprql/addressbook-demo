@@ -32,6 +32,7 @@ class ContactsController < ApplicationController
   end
 
   def upload
+    return head :not_found unless @contact.image
     image = params.require(:data)
 
     @contact.update(image: image.read)
