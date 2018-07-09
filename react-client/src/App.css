@@ -1,3 +1,8 @@
 .App {
     margin: 1rem;
 }
+.person-photo {
+    height: 3rem;
+    width: 3rem;
+    background-size: contain;
+}
