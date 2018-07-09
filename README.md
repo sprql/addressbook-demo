@@ -14,7 +14,7 @@ Source code is located in `./api`
 
 To run API server in docker you can use next command:
 
-`docker run --rm --name addressbook_api -e DATABASE_URL=postgresql://username@localhost/addressbook_production -e BASIC_AUTHENTICATION_NAME=test -e BASIC_AUTHENTICATION_PASSWORD=test -e PORT=9292 -p 9292:9292 sprql/addressbook-api:latest`
+`docker run -d --name addressbook_api -e DATABASE_URL=postgresql://username@localhost/addressbook_production -e BASIC_AUTHENTICATION_NAME=test -e BASIC_AUTHENTICATION_PASSWORD=test -e PORT=9292 -p 9292:9292 sprql/addressbook-api:latest`
 
 where:
 
